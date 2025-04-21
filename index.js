@@ -44,7 +44,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // DB Connection (MongoDB) - Removed deprecated options
-mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce")
   .then(() => {
     console.log("MongoDB connected successfully!");
   })
