@@ -15,6 +15,7 @@ This repository contains the backend code for the e-commerce website. It include
 - Express.js
 - MongoDB (or any other database you're using)
 - JWT (for user authentication)
+- use nodemon index.js
 
 ## Installation
 

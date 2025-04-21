@@ -1,63 +1,87 @@
-const port = 8000;
 const express = require("express");
 const app = express();
-const jwt = require("jsonwebtoken");
-const path = require("path");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const multer = require("multer");
-const {Product}  = require("./src/models/customer");
+const { v2: cloudinary } = require("cloudinary");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+require("dotenv").config();  // Ensure this is loaded at the top
 
-// Middleware
+
+
+
+// Middleware FIRST
 app.use(express.json());
 app.use(cors());
 
-// Database Connection
-mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce?retryWrites=true&w=majority", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+// Then routes
+const userRoutes = require("./src/routes/users");
+app.use("/api/users", userRoutes);
+
+
+// Cloudinary Config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,  // Added in .env
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Check if Cloudinary credentials are missing
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error("Cloudinary credentials are missing from the environment variables.");
+  process.exit(1);  // Exit the app if credentials are missing
+}
 
-// Import Routes 
-const userRoutes = require("./src/routes/user");
-app.use("/api", userRoutes); // Prefix API routes
+// Multer Storage for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "ecommerce_uploads",  // Optional folder for your uploaded images
+    allowed_formats: ["jpg", "png", "jpeg"],  // Allow only these image formats
+  },
+});
 
-// Default Route
+const upload = multer({ storage });
+
+// DB Connection (MongoDB) - Removed deprecated options
+mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce?retryWrites=true&w=majority")
+  .then(() => {
+    console.log("MongoDB connected successfully!");
+  })
+  .catch((err) => {
+    console.error("MongoDB connection failed:", err);
+  });
+
+// Test Route
 app.get("/", (req, res) => {
-    res.send("MongoDB connected with Express.js");
+  res.send("API is working fine!");
 });
 
-// Image Storage Engine
-const storage = multer.diskStorage({
-    destination: "./upload/images",
-    filename: (req, file, cb) => {
-        return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`);
-    },
-});
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
-
-// Serve Images
-app.use("/images", express.static("upload/images"));
 
 // Upload Route
 app.post("/upload", upload.single("product"), (req, res) => {
-    res.json({
-        success: 1,
-        image_url: `http://localhost:${port}/images/${req.file.filename}`,
-    });
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded." });
+  }
+
+  // Send back the URL of the uploaded image in Cloudinary
+  res.json({
+    success: 1,
+    image_url: req.file.path,  // Cloudinary automatically provides the URL
+  });
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something went wrong!");
+});
 
 // Start Server
-app.listen(port, (error) => {
-    if (!error) {
-        console.log("Server Running on Port " + port);
-    } else {
-        console.log("Error: " + error);
-    }
+const port = 8080;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
+
+module.exports = app;
