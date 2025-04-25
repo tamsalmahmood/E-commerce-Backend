@@ -11,6 +11,8 @@ const jwt = require("jsonwebtoken");
 
 // Add a new product
 router.post("/addproduct", async (req, res) => {
+    console.log("Received body:", req.body); // 👈 Add this for debugging
+
     try {
         const products = await Product.find({});
         const id = products.length > 0 ? products.slice(-1)[0].id + 1 : 1;
@@ -77,6 +79,8 @@ router.get("/newcollections", async (req, res) => {
 
 
 router.post("/signup", async (req, res) => {
+    console.log("Request Body:", req.body);
+
     try {
         const { name, email, password } = req.body;
 
@@ -84,7 +88,6 @@ router.post("/signup", async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ success: false, errors: "User already exists" });
         }
-
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -103,7 +106,7 @@ router.post("/signup", async (req, res) => {
         console.error(error);
         res.status(500).json({ success: false, errors: "Server Error" });
     }
-});
+}); 
 
 // Login user
 router.post("/login", async (req, res) => {

@@ -12,6 +12,8 @@ require("dotenv").config();  // Ensure this is loaded at the top
 
 // Middleware FIRST
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+ 
 app.use(cors());
 
 // Then routes
@@ -44,7 +46,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // DB Connection (MongoDB) - Removed deprecated options
-mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce")
+mongoose.connect("mongodb+srv://admin:admin@cluster0.joc8yyj.mongodb.net/E-commerce?retryWrites=true&w=majority")
   .then(() => {
     console.log("MongoDB connected successfully!");
   })
@@ -71,6 +73,9 @@ app.post("/upload", upload.single("product"), (req, res) => {
     image_url: req.file.path,  // Cloudinary automatically provides the URL
   });
 });
+
+
+
 
 // Global Error Handler
 app.use((err, req, res, next) => {
