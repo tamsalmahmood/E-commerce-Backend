@@ -13,7 +13,7 @@ require("dotenv").config();  // Ensure this is loaded at the top
 // Middleware FIRST
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
- 
+
 app.use(cors());
 
 // Then routes
