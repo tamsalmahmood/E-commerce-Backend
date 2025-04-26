@@ -74,9 +74,7 @@ router.get("/newcollections", async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
-
 // ======================== USER AUTH ======================== //
-
 
 router.post("/signup", async (req, res) => {
     console.log("Request Body:", req.body);
@@ -86,8 +84,9 @@ router.post("/signup", async (req, res) => {
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ success: false, errors: "User already exists" });
+            return res.status(400).json({ success: false, error: "User already exists" });
         }
+
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -99,40 +98,44 @@ router.post("/signup", async (req, res) => {
         await user.save();
 
         const payload = { user: { id: user.id } };
-        const token = jwt.sign(payload, "secret_ecom");
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });  // <-- added 24h
 
         res.json({ success: true, token });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, errors: "Server Error" });
+        res.status(500).json({ success: false, error: "Server Error" });
     }
-}); 
+});
 
-// Login user
+// ======================== USER LOGIN ======================== //
+
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password)
+    if (!email || !password) {
         return res.status(400).json({ success: false, error: "Email and password are required." });
+    }
 
     try {
         const user = await User.findOne({ email });
 
-        if (!user)
+        if (!user) {
             return res.status(400).json({ success: false, error: "Wrong Email Id" });
+        }
 
         // Compare the entered password with the hashed password
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch)
+        if (!isMatch) {
             return res.status(400).json({ success: false, error: "Wrong Password" });
+        }
 
         const payload = { user: { id: user.id } };
-        const token = jwt.sign(payload, "secret_ecom", { expiresIn: "1h" });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });  // <-- added 24h
 
         res.json({ success: true, token, cartData: user.cartData });
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ success: false, error: "Server Error" });
     }
 });
