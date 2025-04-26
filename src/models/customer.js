@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema({
 
 //Schema Creating for User Model
 const userSchema  = new mongoose.Schema({
-    name: {
+    username: {
         type: String,
         required: true,
     },

@@ -76,11 +76,16 @@ router.get("/newcollections", async (req, res) => {
 });
 // ======================== USER AUTH ======================== //
 
+// Signup Route
 router.post("/signup", async (req, res) => {
     console.log("Request Body:", req.body);
 
     try {
-        const { name, email, password } = req.body;
+        const { username, email, password } = req.body;
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ success: false, error: "Please provide username, email, and password" });
+        }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -91,21 +96,32 @@ router.post("/signup", async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Create empty cart
         const cart = {};
-        for (let i = 0; i < 300; i++) cart[i] = 0;
+        for (let i = 0; i < 300; i++) {
+            cart[i] = 0;
+        }
 
-        const user = new User({ name, email, password: hashedPassword, cartData: cart });
-        await user.save();
+        const newUser = new User({
+            username,
+            email,
+            password: hashedPassword,
+            cartData: cart
+        });
 
-        const payload = { user: { id: user.id } };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });  // <-- added 24h
+        await newUser.save();
+
+        // Create token
+        const payload = { user: { id: newUser.id } };
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
 
         res.json({ success: true, token });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        console.error("Signup error:", error);
+        res.status(500).json({ success: false, error: "Server error" });
     }
 });
+
 
 // ======================== USER LOGIN ======================== //
 
